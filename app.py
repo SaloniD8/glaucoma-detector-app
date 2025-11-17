@@ -5,10 +5,10 @@ import cv2
 import os
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing import image
-from tensorflow.keras.applications.mobilenet import preprocess_input
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input   # ✅ FIXED IMPORT
 
 # ------------------ Model Setup ------------------
-MODEL_PATH = "glaucoma_model.h5"  # make sure this is in the same folder
+MODEL_PATH = "glaucoma_model.h5"  # Model must be in the same folder
 
 if not os.path.exists(MODEL_PATH):
     st.error(f"Model file not found! Please place {MODEL_PATH} in this folder.")
@@ -38,20 +38,21 @@ def predict_image(img):
     img = img.resize(IMG_SIZE)
     img_array = image.img_to_array(img)
     img_array = np.expand_dims(img_array, axis=0)
-    img_array = preprocess_input(img_array)
+    img_array = preprocess_input(img_array)     # uses MobileNetV2 preprocess
     prediction = model.predict(img_array)[0][0]
+
     if prediction > 0.5:
         result = "Normal Retina"
         confidence = prediction * 100
     else:
         result = "Glaucoma Detected"
         confidence = (1 - prediction) * 100
+
     return result, round(confidence, 2), img
 
 # ------------------ Streamlit UI ------------------
 st.set_page_config(page_title="Glaucoma Detection", page_icon="🩺", layout="wide")
 
-# Neon-style header
 st.markdown("""
 <div style="background-color:#0b0f1a; padding:20px; border-radius:12px;">
 <h1 style="color:#00FFC6; text-align:center; font-family:Orbitron;">Glaucoma Detection AI</h1>
@@ -65,25 +66,24 @@ uploaded_file = st.file_uploader("📤 Upload Retinal Image", type=["jpg","jpeg"
 
 if uploaded_file is not None:
     img = Image.open(uploaded_file).convert("RGB")
-    
-    # Side-by-side display
+
     col1, col2 = st.columns(2)
     with col1:
         st.image(img, caption="Original Retina", use_column_width=True)
-    
+
     with st.spinner("🔬 Analyzing retina..."):
         result, confidence, processed_img = predict_image(img)
-    
+
     with col2:
         st.image(processed_img, caption="Cropped + Resized Retina", use_column_width=True)
 
-    # Result display
     st.markdown("<br>", unsafe_allow_html=True)
+
     if "Glaucoma" in result:
         st.markdown(f"<h2 style='color:#FF5252; text-align:center;'>🚨 {result}</h2>", unsafe_allow_html=True)
     else:
         st.markdown(f"<h2 style='color:#00E676; text-align:center;'>✅ {result}</h2>", unsafe_allow_html=True)
-    
+
     st.markdown(f"<h4 style='color:#00FFC6; text-align:center;'>Confidence: {confidence:.2f}%</h4>", unsafe_allow_html=True)
 
 # Footer
@@ -92,5 +92,3 @@ st.markdown("""
 Powered by Deep Learning | Designed for Ophthalmologists 👁️
 </div>
 """, unsafe_allow_html=True)
-# rebuild trigger
-
